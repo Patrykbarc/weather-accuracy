@@ -47,6 +47,9 @@ select = [
     "RUF",
 ]
 
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["sqlmodel.SQLModel", "pydantic.BaseModel"]
+
 [tool.ruff.format]
 docstring-code-format = true
 
