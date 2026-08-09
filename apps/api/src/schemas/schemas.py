@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 
 from sqlmodel import Field, SQLModel, UniqueConstraint
@@ -25,7 +25,7 @@ class Forecast(ForecastMetricsBase, table=True):
     id: PrimaryKey = None
     location_id: int | None = Field(default=None, foreign_key="location.id")
     target_date: datetime
-    fetched_at: datetime
+    fetched_at: date
     __table_args__ = (UniqueConstraint("location_id", "target_date", "fetched_at"),)
 
 
