@@ -25,6 +25,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "mypy>=2.3.0",
+    "poethepoet>=0.48.0",
     "pytest>=9.1.1",
     "ruff>=0.16.2",
 ]
@@ -64,3 +65,16 @@ warn_redundant_casts = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.poe.tasks]
+db = "python -m api.db"
+lint = "ruff check ."
+fix = "ruff check --fix ."
+format = "ruff format ."
+typecheck = "mypy"
+test = "pytest"
+check.sequence = [
+    { ref = "lint" },
+    { ref = "typecheck" },
+    { ref = "test" },
+]
