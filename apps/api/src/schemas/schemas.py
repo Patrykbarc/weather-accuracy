@@ -7,10 +7,10 @@ PrimaryKey = Annotated[int | None, Field(default=None, primary_key=True)]
 
 
 class ForecastMetricsBase(SQLModel):
-    temp_max: float
-    temp_min: float
-    precipitation: float
-    wind_gusts: float
+    temp_max: float | None
+    temp_min: float | None
+    precipitation: float | None
+    wind_gusts: float | None
 
 
 class Location(SQLModel, table=True):

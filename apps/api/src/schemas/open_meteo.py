@@ -11,10 +11,10 @@ class DailyUnits(BaseModel):
 
 class Daily(BaseModel):
     time: list[str]
-    temperature_2m_max: list[float]
-    temperature_2m_min: list[float]
-    precipitation_sum: list[float]
-    wind_gusts_10m_max: list[float]
+    temperature_2m_max: list[float | None]
+    temperature_2m_min: list[float | None]
+    precipitation_sum: list[float | None]
+    wind_gusts_10m_max: list[float | None]
 
 
 class ForecastResp(BaseModel):
