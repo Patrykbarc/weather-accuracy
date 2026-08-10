@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import httpx
 
 from schemas import OpenMeteoResponse
@@ -32,11 +34,20 @@ def fetch_forecast(lat: float, long: float) -> OpenMeteoResponse:
 
 
 def fetch_observations(lat: float, long: float) -> OpenMeteoResponse:
+    last_week = _get_date_delta(7)
+    yesterday = _get_date_delta(1)
+
     params: Params = {
         "latitude": lat,
         "longitude": long,
         "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_gusts_10m_max",  # noqa: E501
         "timezone": "Europe/Warsaw",
+        "start_date": last_week,
+        "end_date": yesterday,
     }
 
     return get_open_meteo(URL["archive"], params)
+
+
+def _get_date_delta(delta: int) -> str:
+    return ((datetime.now().date()) - timedelta(days=delta)).isoformat()

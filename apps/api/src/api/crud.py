@@ -45,15 +45,14 @@ def set_new_forecasts(
 
 
 def set_new_observation(
-    session: Session, fetched_at: date, observation: Observation
+    session: Session, fetched_at: date, observation: list[Observation]
 ) -> None:
     statement = select(Observation).where(Observation.measured_at == fetched_at)
     result = session.exec(statement).first()
-    print(result)
 
     if result is not None:
         logger.warning(f"Observation for {fetched_at} already exist. Skipping.")
         return
 
-    session.add(observation)
+    session.add_all(observation)
     session.commit()

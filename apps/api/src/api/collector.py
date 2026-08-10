@@ -31,14 +31,17 @@ def handle_forecasts(lat: float = 50.04, long: float = 21.99) -> None:
             for i, day in enumerate(raw_forecasts.time)
         ]
 
-        observation = Observation(
-            location_id=location.id,
-            measured_at=datetime.fromisoformat(raw_observation.time[0]),
-            temp_max=raw_observation.temperature_2m_max[0],
-            temp_min=raw_observation.temperature_2m_min[0],
-            precipitation=raw_observation.precipitation_sum[0],
-            wind_gusts=raw_observation.wind_gusts_10m_max[0],
-        )
+        observation = [
+            Observation(
+                location_id=location.id,
+                measured_at=datetime.fromisoformat(day),
+                temp_max=raw_observation.temperature_2m_max[i],
+                temp_min=raw_observation.temperature_2m_min[i],
+                precipitation=raw_observation.precipitation_sum[i],
+                wind_gusts=raw_observation.wind_gusts_10m_max[i],
+            )
+            for i, day in enumerate(raw_observation.time)
+        ]
 
         set_new_forecasts(session, fetched_at, forecasts)
         set_new_observation(session, fetched_at, observation)
