@@ -12,7 +12,11 @@
   },
 
   "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.indexing": true,
 
   "mypy-type-checker.cwd": "${workspaceFolder}/apps/api",
-  "mypy-type-checker.interpreter": ["${workspaceFolder}/apps/api/.venv/bin/python"]
+  "mypy-type-checker.interpreter": [
+    "${workspaceFolder}/apps/api/.venv/bin/python"
+  ]
 }
