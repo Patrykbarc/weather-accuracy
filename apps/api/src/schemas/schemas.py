@@ -32,5 +32,5 @@ class Forecast(ForecastMetricsBase, table=True):
 class Observation(ForecastMetricsBase, table=True):
     id: PrimaryKey = None
     location_id: int | None = Field(default=None, foreign_key="location.id")
-    measured_at: datetime
+    measured_at: date
     __table_args__ = (UniqueConstraint("location_id", "measured_at"),)

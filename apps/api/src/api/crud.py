@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from sqlmodel import Session, select
 
 from schemas import Forecast, Location
+from schemas.schemas import Observation
 from utils.logger import logger
 
 if TYPE_CHECKING:
@@ -40,4 +41,19 @@ def set_new_forecasts(
         return
 
     session.add_all(forecasts)
+    session.commit()
+
+
+def set_new_observation(
+    session: Session, fetched_at: date, observation: Observation
+) -> None:
+    statement = select(Observation).where(Observation.measured_at == fetched_at)
+    result = session.exec(statement).first()
+    print(result)
+
+    if result is not None:
+        logger.warning(f"Observation for {fetched_at} already exist. Skipping.")
+        return
+
+    session.add(observation)
     session.commit()

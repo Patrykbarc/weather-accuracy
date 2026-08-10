@@ -17,7 +17,7 @@ class Daily(BaseModel):
     wind_gusts_10m_max: list[float | None]
 
 
-class ForecastResp(BaseModel):
+class OpenMeteoResponse(BaseModel):
     latitude: float
     longitude: float
     generationtime_ms: float
