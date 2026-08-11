@@ -1,9 +1,9 @@
 from sqlmodel import SQLModel, create_engine
 
+from config import settings
 from schemas import schemas  # noqa: F401
 
-sqlite_connection = "sqlite:///weather.db"
-engine = create_engine(sqlite_connection, echo=True)
+engine = create_engine(settings.database_url, echo=settings.db_echo)
 
 
 def init_db() -> None:
