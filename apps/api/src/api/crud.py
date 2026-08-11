@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from schemas import Forecast, Location
 from schemas.schemas import Observation
@@ -44,15 +44,17 @@ def set_new_forecasts(
     session.commit()
 
 
-def set_new_observation(
-    session: Session, fetched_at: date, observation: list[Observation]
-) -> None:
-    statement = select(Observation).where(Observation.measured_at == fetched_at)
-    result = session.exec(statement).first()
+def create_observations(session: Session, observations: list[Observation]) -> None:
+    dates = [o.measured_at for o in observations]
 
-    if result is not None:
-        logger.warning(f"Observation for {fetched_at} already exist. Skipping.")
+    statement = select(Observation).where(col(Observation.measured_at).in_(dates))
+    existing = {o.measured_at for o in session.exec(statement).all()}
+
+    new = [o for o in observations if o.measured_at not in existing]
+
+    if not new:
+        logger.warning("All observations already exist. Skipping.")
         return
 
-    session.add_all(observation)
+    session.add_all(new)
     session.commit()
