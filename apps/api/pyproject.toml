@@ -78,3 +78,5 @@ check.sequence = [
     { ref = "typecheck" },
     { ref = "test" },
 ]
+collector = "python -m api.collector"
+backfill = "python -m api.backfill"
