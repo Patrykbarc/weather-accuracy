@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs the collector once a day on macOS.
+
+  Setup:
+    1. Replace every {{PROJECT_PATH}} and {{HOME}} below with absolute paths.
+    2. cp this file to ~/Library/LaunchAgents/weather-accuracy.collector.plist
+    3. mkdir -p ~/Library/Logs/weather-accuracy
+    4. launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/weather-accuracy.collector.plist
+
+  Check on it:
+    launchctl list | grep weather-accuracy      # second column is the last exit code
+    launchctl start weather-accuracy.collector  # run it now instead of waiting
+    tail ~/Library/Logs/weather-accuracy/collector.error.log
+
+  Remove it:
+    launchctl bootout gui/$(id -u)/weather-accuracy.collector
+    rm ~/Library/LaunchAgents/weather-accuracy.collector.plist
+
+  Note: editing this file after loading it does nothing until you bootout and
+  bootstrap again. launchd keeps the old definition in memory.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>weather-accuracy.collector</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{PROJECT_PATH}}/apps/api/.venv/bin/python</string>
+        <string>-m</string>
+        <string>api.jobs.collector</string>
+    </array>
+
+    <!--
+      Required. launchd starts processes from /, and both the .env lookup and
+      any relative database path resolve against the working directory. Without
+      this the collector reads no config at all.
+    -->
+    <key>WorkingDirectory</key>
+    <string>{{PROJECT_PATH}}/apps/api</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>6</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- Python's logging writes to stderr, so most output lands in the second file. -->
+    <key>StandardOutPath</key>
+    <string>{{HOME}}/Library/Logs/weather-accuracy/collector.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{HOME}}/Library/Logs/weather-accuracy/collector.error.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
