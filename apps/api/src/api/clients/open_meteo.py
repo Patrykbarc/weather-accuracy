@@ -3,7 +3,7 @@ from enum import StrEnum
 
 import httpx
 
-from api.schemas import OpenMeteoResponse
+from api.schemas import OpenMeteoGeocodingResponse, OpenMeteoResponse
 
 type Params = dict[str, str | int | float]
 
@@ -12,6 +12,7 @@ class Endpoint(StrEnum):
     FORECAST = "https://api.open-meteo.com/v1/forecast"
     ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
     HISTORICAL = "https://historical-forecast-api.open-meteo.com/v1/forecast"
+    GEOCODING = "https://geocoding-api.open-meteo.com/v1/search"
 
 
 _COMMON_PARAMS = {
@@ -56,3 +57,21 @@ def fetch_observations(
         start_date=_get_date_delta(days_back),
         end_date=_get_date_delta(1),
     )
+
+
+def fetch_locations(names: list[str]) -> list[OpenMeteoGeocodingResponse]:
+    locations: list[OpenMeteoGeocodingResponse] = []
+
+    for name in names:
+        params: Params = {"name": name, "count": 1}
+
+        resp = httpx.get(Endpoint.GEOCODING, params=params, timeout=30)
+        resp.raise_for_status()
+
+        results = resp.json().get("results")
+        if not results:
+            continue
+
+        locations.append(OpenMeteoGeocodingResponse.model_validate(results[0]))
+
+    return locations

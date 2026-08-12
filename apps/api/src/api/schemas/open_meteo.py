@@ -17,7 +17,12 @@ class Daily(BaseModel):
     wind_gusts_10m_max: list[float | None]
 
 
-class OpenMeteoResponse(BaseModel):
+class Location(BaseModel):
+    latitude: float
+    longitude: float
+
+
+class OpenMeteoResponse(Location):
     latitude: float
     longitude: float
     generationtime_ms: float
@@ -27,3 +32,7 @@ class OpenMeteoResponse(BaseModel):
     elevation: float
     daily_units: DailyUnits
     daily: Daily
+
+
+class OpenMeteoGeocodingResponse(Location):
+    name: str
