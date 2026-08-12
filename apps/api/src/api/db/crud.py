@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Session, col, select
 
-from schemas import Forecast, Location
-from schemas.schemas import Observation
-from utils.logger import logger
+from api.schemas import Forecast, Location
+from api.schemas.schemas import Observation
+from api.utils.logger import logger
 
 if TYPE_CHECKING:
     from datetime import date
