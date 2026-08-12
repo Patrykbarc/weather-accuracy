@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "alembic>=1.19.1",
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
     "pydantic-settings>=2.15.0",
@@ -33,6 +34,7 @@ dev = [
 [tool.ruff]
 src = ["src"]
 line-length = 88
+extend-exclude = ["migrations/versions"]
 
 [tool.ruff.lint]
 select = [
@@ -67,7 +69,9 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.poe.tasks]
-db = "python -m api.db"
+migrate = "alembic upgrade head"
+migration = "alembic revision --autogenerate"
+db-status = "alembic current"
 lint = "ruff check ."
 fix = "ruff check --fix ."
 format = "ruff format ."
