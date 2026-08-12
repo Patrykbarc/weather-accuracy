@@ -3,7 +3,7 @@ from enum import StrEnum
 
 import httpx
 
-from schemas import OpenMeteoResponse
+from api.schemas import OpenMeteoResponse
 
 type Params = dict[str, str | int | float]
 
