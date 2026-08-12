@@ -19,7 +19,7 @@ def collect_forecasts(lat: float, long: float) -> None:
         forecasts = [
             Forecast(
                 location_id=location.id,
-                target_date=datetime.fromisoformat(day),
+                target_date=date.fromisoformat(day),
                 temp_max=raw.temperature_2m_max[i],
                 temp_min=raw.temperature_2m_min[i],
                 precipitation=raw.precipitation_sum[i],
@@ -27,6 +27,13 @@ def collect_forecasts(lat: float, long: float) -> None:
                 fetched_at=fetched_at,
             )
             for i, day in enumerate(raw.time)
+            if None
+            not in (
+                raw.temperature_2m_max[i],
+                raw.temperature_2m_min[i],
+                raw.precipitation_sum[i],
+                raw.wind_gusts_10m_max[i],
+            )
         ]
 
         set_new_forecasts(session, fetched_at, forecasts)
