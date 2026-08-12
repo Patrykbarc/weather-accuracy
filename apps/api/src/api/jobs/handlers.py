@@ -2,11 +2,11 @@ from datetime import date, datetime
 
 from sqlmodel import Session
 
-from api.crud import create_observations, get_or_create_location, set_new_forecasts
-from api.db import engine
-from clients.open_meteo import fetch_forecast, fetch_observations
-from schemas import Forecast
-from schemas.schemas import Observation
+from api.clients.open_meteo import fetch_forecast, fetch_observations
+from api.db.crud import create_observations, get_or_create_location, set_new_forecasts
+from api.db.engine import engine
+from api.schemas import Forecast
+from api.schemas.schemas import Observation
 
 
 def collect_forecasts(lat: float, long: float) -> None:

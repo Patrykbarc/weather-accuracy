@@ -1,5 +1,5 @@
-from api.handlers import collect_forecasts, collect_observations
-from constants.default_location import DEFAULT_LOCATION
+from api.constants.default_location import DEFAULT_LOCATION
+from api.jobs.handlers import collect_forecasts, collect_observations
 
 
 def run_collector(
