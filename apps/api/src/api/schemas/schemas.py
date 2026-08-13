@@ -16,6 +16,7 @@ class ForecastMetricsBase(SQLModel):
 class Location(SQLModel, table=True):
     id: PrimaryKey = None
     name: str
+    slug: str = Field(unique=True)
     latitude: float
     longitude: float
     __table_args__ = (UniqueConstraint("latitude", "longitude"),)
