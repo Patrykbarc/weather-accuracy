@@ -84,3 +84,4 @@ check.sequence = [
 ]
 collector = "python -m api.jobs.collector"
 backfill = "python -m api.jobs.backfill"
+dev = "uvicorn api.web.main:app --reload"
