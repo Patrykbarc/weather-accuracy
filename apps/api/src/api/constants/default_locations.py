@@ -1,15 +1,20 @@
-from typing import NamedTuple
+from typing import Literal, NamedTuple
 
 
 class LocationSeed(NamedTuple):
-    name: str
+    name: LOCATION_NAMES
+    slug: LOCATION_SLUGS
     latitude: float
     longitude: float
 
 
+LOCATION_NAMES = Literal["Rzeszów", "Zakopane", "Sopot", "Suwałki"]
+LOCATION_SLUGS = Literal["rzeszow", "zakopane", "sopot", "suwalki"]
+
+
 DEFAULT_LOCATIONS = [
-    LocationSeed("Rzeszów", 50.04, 21.99),
-    LocationSeed("Zakopane", 49.30, 19.95),
-    LocationSeed("Sopot", 54.44, 18.56),
-    LocationSeed("Suwałki", 54.10, 22.93),
+    LocationSeed("Rzeszów", "rzeszow", 50.04, 21.99),
+    LocationSeed("Zakopane", "zakopane", 49.30, 19.95),
+    LocationSeed("Sopot", "sopot", 54.44, 18.56),
+    LocationSeed("Suwałki", "suwalki", 54.10, 22.93),
 ]

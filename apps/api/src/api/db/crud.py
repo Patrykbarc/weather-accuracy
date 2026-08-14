@@ -24,7 +24,12 @@ def get_or_create_locations(
 
     if missing:
         created = [
-            Location(name=seed.name, latitude=seed.latitude, longitude=seed.longitude)
+            Location(
+                name=seed.name,
+                slug=seed.slug,
+                latitude=seed.latitude,
+                longitude=seed.longitude,
+            )
             for seed in missing
         ]
         session.add_all(created)
