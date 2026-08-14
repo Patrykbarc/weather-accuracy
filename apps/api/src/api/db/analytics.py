@@ -1,9 +1,10 @@
-from typing import Literal
+from typing import Any, Literal, get_args
 
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlmodel import Session
 
+from api.constants.default_locations import LOCATION_SLUGS
 from api.db.engine import engine
 
 type Metric = Literal["temp_max", "temp_min", "precipitation", "wind_gusts"]
@@ -15,6 +16,9 @@ _ERROR_COLUMN_WHITELIST: dict[Metric, str] = {
     "wind_gusts": "wind_gusts_error",
 }
 
+ALLOWED_METRICS = set(_ERROR_COLUMN_WHITELIST.keys())
+ALLOWED_SLUGS = set(get_args(LOCATION_SLUGS))
+
 
 class AccuracyByLeadTime(BaseModel):
     lead_time: int
@@ -24,12 +28,13 @@ class AccuracyByLeadTime(BaseModel):
 
 
 def get_accuracy_by_lead_time(
-    session: Session, metric: Metric
+    session: Session, metric: Metric, slug: LOCATION_SLUGS | None = None
 ) -> list[AccuracyByLeadTime]:
-    if metric not in _ERROR_COLUMN_WHITELIST:
-        raise ValueError(
-            f"Invalid metric '{metric}'. Allowed: {set(_ERROR_COLUMN_WHITELIST)}"
-        )
+
+    _validate_allowed(value=metric, collection=ALLOWED_METRICS)
+
+    if slug is not None:
+        _validate_allowed(value=slug, collection=ALLOWED_SLUGS)
 
     col = _ERROR_COLUMN_WHITELIST[metric]
 
@@ -40,14 +45,20 @@ def get_accuracy_by_lead_time(
             ROUND(AVG(fe.{col}), 2) AS bias,
             ROUND(AVG(ABS(fe.{col})), 2) AS mae
         FROM forecast_error fe
+        WHERE (:slug IS NULL OR fe.slug = :slug)
         GROUP BY fe.lead_time
     """
 
-    results = session.execute(text(statement)).mappings()
+    results = session.execute(text(statement), {"slug": slug}).mappings()
     return [AccuracyByLeadTime.model_validate(row) for row in results]
+
+
+def _validate_allowed(value: Any, collection: set[Any]) -> None:
+    if value not in collection:
+        raise ValueError(f"Invalid value '{value}'. Allowed: {collection}")
 
 
 if __name__ == "__main__":
     with Session(engine) as session:
-        resp = get_accuracy_by_lead_time(session, metric="temp_max")
+        resp = get_accuracy_by_lead_time(session, metric="temp_max", slug="rzeszow")
         print(resp)
