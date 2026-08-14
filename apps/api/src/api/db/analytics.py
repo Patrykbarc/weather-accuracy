@@ -4,8 +4,8 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlmodel import Session
 
-from api.constants.default_locations import LOCATION_SLUGS
-from api.db.engine import engine
+from api.constants import LOCATION_SLUGS
+from api.db import engine
 
 type Metric = Literal["temp_max", "temp_min", "precipitation", "wind_gusts"]
 
@@ -43,7 +43,7 @@ def get_accuracy_by_lead_time(
             fe.lead_time,
             COUNT(fe.{col}) AS samples,
             ROUND(AVG(fe.{col}), 2) AS bias,
-            ROUND(AVG(ABS(fe.{col})), 2) AS mae
+        ROUND(AVG(ABS(fe.{col})), 2) AS mae
         FROM forecast_error fe
         WHERE (:slug IS NULL OR fe.slug = :slug)
         GROUP BY fe.lead_time

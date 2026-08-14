@@ -1,14 +1,13 @@
 import sys
 from typing import TYPE_CHECKING
 
-from api.constants.default_locations import DEFAULT_LOCATIONS
+from api.constants import DEFAULT_LOCATIONS, LocationSeed
 from api.jobs.handlers import collect_observations
 from api.utils.logger import logger
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from api.constants.default_locations import LocationSeed
 
 BACKFILL_DAYS = 60
 

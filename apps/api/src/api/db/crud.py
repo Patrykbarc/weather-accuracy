@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Session, col, select
 
-from api.constants.default_locations import DEFAULT_LOCATIONS, LocationSeed
+from api.constants import DEFAULT_LOCATIONS, LocationSeed
 from api.schemas import Forecast, Location
 from api.schemas.schemas import Observation
 from api.utils.logger import logger

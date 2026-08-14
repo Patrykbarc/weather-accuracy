@@ -5,9 +5,9 @@ import httpx
 from sqlmodel import Session
 
 from api.clients.open_meteo import fetch_forecast, fetch_observations
-from api.constants.default_locations import DEFAULT_LOCATIONS
+from api.constants import DEFAULT_LOCATIONS, LocationSeed
+from api.db import engine
 from api.db.crud import create_observations, get_or_create_locations, set_new_forecasts
-from api.db.engine import engine
 from api.schemas import Forecast
 from api.schemas.schemas import Observation
 from api.utils.logger import logger
@@ -15,7 +15,6 @@ from api.utils.logger import logger
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from api.constants.default_locations import LocationSeed
     from api.schemas import Daily
 
 
