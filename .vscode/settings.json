@@ -11,6 +11,22 @@
     }
   },
 
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact",
+    "astro"
+  ],
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "[astro]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" }
+  },
+  "[typescript]": {
+    "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" }
+  },
+
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
   "python.analysis.indexing": true,
