@@ -1,0 +1,28 @@
+<footer class="text-muted-foreground space-y-3 text-sm leading-relaxed">
+  <h2 class="text-foreground text-sm font-semibold tracking-wide uppercase">
+    Methodology
+  </h2>
+  <div class="text-pretty">
+    Every day the tracker saves a fresh 16-day forecast for each location. When
+    a day finally arrives, what actually happened gets compared against every
+    old forecast that tried to call it. Comparisons are grouped by <strong
+      >lead time</strong
+    >, meaning how many days passed between the forecast going out and the day
+    it described. Lead time 0 is a same-day forecast. Lead time 15 was made a
+    little over two weeks ahead.
+  </div>
+  <div class="text-pretty">
+    <strong>Bias</strong> is the average signed error, so forecast minus measurement.
+    Positive bias means the forecast runs high, negative means it runs low. That is
+    the number to look at if you want to know whether the model leans one way out
+    of habit. <strong>MAE</strong> (mean absolute error) ignores direction and just
+    says how far off a typical forecast is.
+  </div>
+  <div class="text-pretty">
+    One thing to watch when reading the chart. Short lead times have far more
+    comparisons behind them than long ones, because a recent day has collected
+    forecasts from every day before it while the 15-day mark rests on a handful.
+    The far right of the chart is the noisiest part, so read it as a hint rather
+    than a result.
+  </div>
+</footer>

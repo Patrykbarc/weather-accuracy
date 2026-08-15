@@ -1,5 +1,10 @@
 ---
+import "../styles/global.css";
 
+import { Dashboard } from "@/features/dashboard/dashboard";
+import Footer from "@/components/layout/footer.astro";
+import Header from "@/components/layout/header.astro";
+import Main from "@/components/layout/main.astro";
 ---
 
 <html lang="en">
@@ -9,9 +14,13 @@
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
-    <title>Astro</title>
+    <title>Forecast Accuracy Tracker</title>
   </head>
   <body>
-    <h1>Astro</h1>
+    <Main>
+      <Header />
+      <Dashboard client:idle />
+      <Footer />
+    </Main>
   </body>
 </html>
