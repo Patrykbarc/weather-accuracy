@@ -26,8 +26,8 @@ I picked the four locations to be as different from each other as I could:
 | Data collection (forecasts + observations) | ☑ running daily               |
 | Database schema + migrations               | ☑                             |
 | Accuracy analysis (`forecast_error` view)  | ☑                             |
-| REST API                                   | planned                       |
-| Web dashboard                              | planned                       |
+| REST API (`GET /api/analytics`)            | ☑                             |
+| Web dashboard                              | in progress (Astro scaffold)  |
 | Deployment (VPS)                           | planned, runs locally for now |
 
 Collection started on `11-08-2026`. Pairs of forecast and outcome can only be built going forward, so it takes about two weeks before the averages mean anything.
@@ -40,7 +40,8 @@ flowchart LR
     B[Open-Meteo<br/>archive API] -->|actual measurements| C
     C --> D[(SQLite)]
     D --> E[forecast_error<br/>view]
-    E --> F[analysis]
+    E --> F[FastAPI<br/>/api/analytics]
+    F --> G[Astro<br/>dashboard]
 ```
 
 Once a day, for every location, the collector:
@@ -76,6 +77,8 @@ The analysis lives in a SQL view that joins the two tables and works out the err
 ```sql
 CREATE VIEW forecast_error AS
 SELECT
+    l.name,
+    l.slug,
     f.location_id,
     f.target_date,
     f.fetched_at,
@@ -88,7 +91,11 @@ FROM forecast f
 JOIN observation o
     ON  o.location_id = f.location_id
     AND o.measured_at = f.target_date
+JOIN location l
+    ON  l.id = f.location_id
 ```
+
+The join on `location` is there so the API can filter by a URL-friendly `slug` without a second query.
 
 Two things I decided on early:
 
@@ -105,11 +112,34 @@ FROM forecast_error
 GROUP BY lead_time;
 ```
 
+## API
+
+FastAPI serves the view over HTTP. One endpoint so far:
+
+```
+GET /api/analytics?metric=temp_max&slug=rzeszow
+```
+
+`metric` is required, and it has to be one of `temp_max`, `temp_min`, `precipitation`, `wind_gusts`. `slug` is optional. Leave it out and the numbers cover all four locations together. Both are typed as `Literal`s, so anything else comes back as a 422 from FastAPI before it reaches the database.
+
+```json
+[
+  { "lead_time": 0, "samples": 4, "bias": 0.7, "mae": 0.7 },
+  { "lead_time": 1, "samples": 3, "bias": 0.83, "mae": 0.83 }
+]
+```
+
+The metric name never goes into the SQL directly. It picks a column out of a whitelist dict, and `slug` goes in as a bound parameter. The query string itself is built with an f-string, so that whitelist is what keeps it safe. A metric that isn't a key in it raises before any SQL runs.
+
+Interactive docs sit at `localhost:8000/docs`. The frontend generates its types from `localhost:8000/openapi.json`, so the schema is the contract between the two apps and I don't hand-write interfaces on the other side.
+
 ## Tech stack
 
-**Backend:** Python 3.14, [uv](https://docs.astral.sh/uv/), SQLModel + SQLAlchemy, Alembic, httpx, pydantic-settings, FastAPI (planned)
+**Backend:** Python 3.14, [uv](https://docs.astral.sh/uv/), FastAPI, SQLModel + SQLAlchemy, Alembic, httpx, pydantic-settings
 
-**Tooling:** ruff, mypy (strict), pytest, poethepoet
+**Frontend:** Astro, React, Tailwind, openapi-typescript
+
+**Tooling:** ruff, mypy (strict), pytest, poethepoet, pnpm workspace
 
 **Data:** [Open-Meteo](https://open-meteo.com/), free and no API key needed
 
@@ -118,24 +148,42 @@ SQLite is doing about 80 rows a day with one writer and mostly reads. Running a 
 ## Getting started
 
 ```bash
-cd apps/api
-uv sync
-cp .env.example .env      # then set DATABASE_URL
-uv run poe migrate        # create schema
-uv run poe collector      # fetch today's data
+cp apps/api/.env.example apps/api/.env   # then set DATABASE_URL
+pnpm install                             # frontend deps, from the root
+pnpm api:migrate                         # create schema
+pnpm dev                                 # API on :8000, web on :4321
 ```
+
+`uv` handles the Python side on its own. The first `pnpm api:*` command syncs the virtualenv, so there's no separate `uv sync` step.
 
 `DATABASE_URL` deliberately has no fallback value. If it's missing the app dies on startup, which beats quietly creating an empty database in whatever directory the process happened to start in. I learned that one the hard way.
 
 ### Commands
 
-| Command         | Description                                           |
-| --------------- | ----------------------------------------------------- |
-| `poe collector` | fetch forecasts + recent observations (the daily job) |
-| `poe backfill`  | fetch 60 days of historical observations              |
-| `poe migrate`   | apply pending migrations                              |
-| `poe migration` | autogenerate a migration from model changes           |
-| `poe check`     | lint + typecheck + tests                              |
+The repo is a pnpm workspace, so the everyday commands run from the root:
+
+| Command            | Description                                    |
+| ------------------ | ---------------------------------------------- |
+| `pnpm dev`         | API and web dev servers together               |
+| `pnpm api:dev`     | API only, with reload, on `localhost:8000`     |
+| `pnpm api:migrate` | apply pending migrations                       |
+| `pnpm api:check`   | lint + typecheck + tests                       |
+| `pnpm web:dev`     | web only, on `localhost:4321`                  |
+| `pnpm web:build`   | production build of the frontend               |
+| `pnpm web:check`   | eslint + `astro check`                         |
+
+The backend tasks are [poethepoet](https://poethepoet.natn.io/) tasks defined in `apps/api/pyproject.toml`. The ones without a root alias run through `uv`:
+
+| Command                                     | Description                                           |
+| ------------------------------------------- | ----------------------------------------------------- |
+| `uv run --directory apps/api poe collector` | fetch forecasts + recent observations (the daily job) |
+| `uv run --directory apps/api poe backfill`  | fetch 60 days of historical observations              |
+| `uv run --directory apps/api poe migration` | autogenerate a migration from model changes           |
+| `uv run --directory apps/api poe db-status` | show the current migration revision                   |
+
+Or drop `--directory apps/api` and just `uv run poe <task>` from inside `apps/api`.
+
+Frontend types are regenerated from the running API with `pnpm --filter web codegen:openapi`, which needs `pnpm api:dev` up first.
 
 ### Scheduling
 
@@ -164,7 +212,8 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/weather-accuracy.collect
 
 ## Roadmap
 
-- [ ] FastAPI endpoints over `forecast_error`, with frontend types generated from the OpenAPI schema
+- [x] FastAPI endpoint over `forecast_error`, with frontend types generated from the OpenAPI schema
+- [ ] More endpoints: per-location comparison, error over calendar time
 - [ ] Web dashboard showing error against lead time, per location and metric
 - [ ] Deploy to a VPS (nginx + systemd timer)
 - [ ] Tests
