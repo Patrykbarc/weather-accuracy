@@ -1,10 +1,16 @@
 {
   "name": "weather-accuracy",
   "version": "1.0.0",
+  "private": true,
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "api:dev": "uv run --directory apps/api poe dev",
+    "api:migrate": "uv run --directory apps/api poe migrate",
+    "api:check": "uv run --directory apps/api poe check",
+    "web:dev": "pnpm --filter web dev",
+    "web:build": "pnpm --filter web build",
+    "web:check": "pnpm --filter web check",
+    "dev": "pnpm run \"/^(api|web):dev$/\""
   },
   "keywords": [],
   "author": "",
