@@ -19,6 +19,20 @@ export function formatLeadTime(leadTime: number): string {
   return `${leadTime} ${leadTime === 1 ? "day" : "days"}`;
 }
 
+export function formatDate(value: string | null): string {
+  if (!value) return EMPTY;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return EMPTY;
+
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export function formatComparisons(samples: number): string {
   return `${samples} ${samples === 1 ? "comparison" : "comparisons"}`;
 }

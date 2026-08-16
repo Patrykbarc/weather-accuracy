@@ -1,5 +1,6 @@
 ---
 import { ThemeToggle } from "@/components/views/theme-toggle";
+import { LastUpdatedAt } from "../views/last-updated-at";
 ---
 
 <header class="flex items-start justify-between gap-4">
@@ -16,9 +17,7 @@ import { ThemeToggle } from "@/components/views/theme-toggle";
       by lead time, measured against what actually happened.
     </p>
 
-    <p class="text-muted-foreground text-xs">
-      Last updated <span>15 Aug 2026, 19:49</span>
-    </p>
+    <LastUpdatedAt client:load />
   </div>
 
   <ThemeToggle client:idle />
