@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the Weather Accuracy collector daily
+
+[Timer]
+OnCalendar=*-*-* 06:00:00
+# Runs a missed job once the machine is back, same reason launchd was picked
+# over cron locally: a skipped day is data that cannot be fetched again.
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

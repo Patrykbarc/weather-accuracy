@@ -1,0 +1,18 @@
+[Unit]
+Description=Weather Accuracy collector (one shot)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=weather
+Group=weather
+WorkingDirectory=/opt/weather-accuracy/apps/api
+Environment=HOME=/home/weather
+ExecStart=/opt/weather-accuracy/apps/api/.venv/bin/python -m api.jobs.collector
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/weather-accuracy

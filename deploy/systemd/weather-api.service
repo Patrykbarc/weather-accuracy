@@ -1,0 +1,24 @@
+[Unit]
+Description=Weather Accuracy API (uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=weather
+Group=weather
+WorkingDirectory=/opt/weather-accuracy/apps/api
+Environment=HOME=/home/weather
+ExecStart=/opt/weather-accuracy/apps/api/.venv/bin/uvicorn api.web.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+# uvicorn only ever needs to read the code and read/write the database
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/weather-accuracy
+
+[Install]
+WantedBy=multi-user.target
