@@ -44,6 +44,19 @@ export default defineConfig([
     },
   },
 
+  // Generated shadcn registry components. Recharts and Base UI hand back loose
+  // types, and every `shadcn add --overwrite` would undo hand-patching.
+  {
+    files: ["src/components/ui/**"],
+    rules: {
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unnecessary-type-assertion": "off",
+      "@typescript-eslint/restrict-template-expressions": "off",
+    },
+  },
+
   // Config files and client-side <script> blocks are outside any tsconfig project
   {
     files: ["**/*.{js,mjs,cjs}", "**/*.astro/*.ts"],
