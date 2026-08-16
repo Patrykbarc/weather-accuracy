@@ -1,11 +1,13 @@
+from datetime import date
 from typing import Any, Literal, get_args
 
 from pydantic import BaseModel
-from sqlalchemy import text
-from sqlmodel import Session
+from sqlalchemy import func, text
+from sqlmodel import Session, select
 
 from api.constants import LOCATION_SLUGS
 from api.db import engine
+from api.schemas.schemas import Forecast
 
 type Metric = Literal["temp_max", "temp_min", "precipitation", "wind_gusts"]
 
@@ -25,6 +27,10 @@ class AccuracyByLeadTime(BaseModel):
     samples: int
     bias: float | None
     mae: float | None
+
+
+class LastUpdatedAt(BaseModel):
+    last_updated: date | None
 
 
 def get_accuracy_by_lead_time(
@@ -51,6 +57,12 @@ def get_accuracy_by_lead_time(
 
     results = session.execute(text(statement), {"slug": slug}).mappings()
     return [AccuracyByLeadTime.model_validate(row) for row in results]
+
+
+def get_last_updated(session: Session) -> LastUpdatedAt:
+    last_updated = session.exec(select(func.max(Forecast.fetched_at))).one()
+
+    return LastUpdatedAt(last_updated=last_updated)
 
 
 def _validate_allowed(value: Any, collection: set[Any]) -> None:
