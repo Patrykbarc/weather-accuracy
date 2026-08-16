@@ -1,11 +1,25 @@
-<header class="space-y-2">
-  <h1>Forecast Accuracy Tracker</h1>
-  <p>
-    How much worse do weather forecasts get the further ahead they look? Error
-    by lead time, measured against what actually happened.
-  </p>
+---
+import { ThemeToggle } from "@/components/views/theme-toggle";
+---
 
-  <p class="text-muted-foreground text-xs">
-    Last updated <span>15 Aug 2026, 19:49</span>
-  </p>
+<header class="flex items-start justify-between gap-4">
+  <div class="space-y-2">
+    <h1
+      class="text-foreground text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
+    >
+      Forecast Accuracy Tracker
+    </h1>
+    <p
+      class="text-muted-foreground max-w-xl text-sm leading-relaxed text-pretty"
+    >
+      How much worse do weather forecasts get the further ahead they look? Error
+      by lead time, measured against what actually happened.
+    </p>
+
+    <p class="text-muted-foreground text-xs">
+      Last updated <span>15 Aug 2026, 19:49</span>
+    </p>
+  </div>
+
+  <ThemeToggle client:idle />
 </header>
