@@ -2,6 +2,8 @@
 
 **How wrong are weather forecasts and do they get worse the further ahead they look?**
 
+Live at [weather.patrykbarc.com](https://weather.patrykbarc.com)
+
 Every morning this project saves what the forecast says will happen. Later it saves what actually happened, and compares the two.
 
 The useful part is that each forecast is stored together with the date it was issued. A single day ends up covered by up to 16 forecasts, made anywhere from 15 days out to the morning of. So I can ask things like:
@@ -21,14 +23,14 @@ I picked the four locations to be as different from each other as I could:
 
 ## Status
 
-| Component                                  | State                         |
-| ------------------------------------------ | ----------------------------- |
-| Data collection (forecasts + observations) | ☑ running daily               |
-| Database schema + migrations               | ☑                             |
-| Accuracy analysis (`forecast_error` view)  | ☑                             |
-| REST API (`GET /api/analytics`)            | ☑                             |
-| Web dashboard                              | in progress (Astro scaffold)  |
-| Deployment (VPS)                           | planned, runs locally for now |
+| Component                                  | State           |
+| ------------------------------------------ | --------------- |
+| Data collection (forecasts + observations) | ☑ running daily |
+| Database schema + migrations               | ☑               |
+| Accuracy analysis (`forecast_error` view)  | ☑               |
+| REST API (`GET /api/analytics`)            | ☑               |
+| Web dashboard                              | ☑               |
+| Deployment (VPS)                           | ☑ live          |
 
 Collection started on `11-08-2026`. Pairs of forecast and outcome can only be built going forward, so it takes about two weeks before the averages mean anything.
 
@@ -162,15 +164,15 @@ pnpm dev                                 # API on :8000, web on :4321
 
 The repo is a pnpm workspace, so the everyday commands run from the root:
 
-| Command            | Description                                    |
-| ------------------ | ---------------------------------------------- |
-| `pnpm dev`         | API and web dev servers together               |
-| `pnpm api:dev`     | API only, with reload, on `localhost:8000`     |
-| `pnpm api:migrate` | apply pending migrations                       |
-| `pnpm api:check`   | lint + typecheck + tests                       |
-| `pnpm web:dev`     | web only, on `localhost:4321`                  |
-| `pnpm web:build`   | production build of the frontend               |
-| `pnpm web:check`   | eslint + `astro check`                         |
+| Command            | Description                                |
+| ------------------ | ------------------------------------------ |
+| `pnpm dev`         | API and web dev servers together           |
+| `pnpm api:dev`     | API only, with reload, on `localhost:8000` |
+| `pnpm api:migrate` | apply pending migrations                   |
+| `pnpm api:check`   | lint + typecheck + tests                   |
+| `pnpm web:dev`     | web only, on `localhost:4321`              |
+| `pnpm web:build`   | production build of the frontend           |
+| `pnpm web:check`   | eslint + `astro check`                     |
 
 The backend tasks are [poethepoet](https://poethepoet.natn.io/) tasks defined in `apps/api/pyproject.toml`. The ones without a root alias run through `uv`:
 
@@ -185,20 +187,47 @@ Or drop `--directory apps/api` and just `uv run poe <task>` from inside `apps/ap
 
 Frontend types are regenerated from the running API with `pnpm --filter web codegen:openapi`, which needs `pnpm api:dev` up first.
 
-### Scheduling
+## Deployment
 
-A `launchd` agent runs the collector every day at 06:00. I went with `launchd` over `cron` because it catches up on jobs it missed while the machine was asleep. On a laptop that gets closed every evening, `cron` would just skip the run and I'd lose the day.
+Everything the server needs is in [`deploy/`](deploy/).
 
-The agent lives in [`deploy/launchd/`](deploy/launchd/weather-accuracy.collector.plist.example). Fill in the two placeholders, then:
-
-```bash
-cp deploy/launchd/weather-accuracy.collector.plist.example \
-   ~/Library/LaunchAgents/weather-accuracy.collector.plist
-mkdir -p ~/Library/Logs/weather-accuracy
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/weather-accuracy.collector.plist
+```
+visitor -> Cloudflare (TLS) -> VPS -> nginx -> uvicorn -> SQLite
 ```
 
-`launchctl list | grep weather-accuracy` shows the last exit code in the second column, which is why the collector bothers to exit non-zero when a location fails.
+| Piece         | Where                                                      |
+| ------------- | ---------------------------------------------------------- |
+| Code          | `/opt/weather-accuracy`, owned by a `weather` service user |
+| Database      | `/var/lib/weather-accuracy/weather.db`                     |
+| Static files  | `/var/www/weather-accuracy`                                |
+| API           | `weather-api.service`, uvicorn bound to `127.0.0.1:8000`   |
+| Collector     | `weather-collector.timer`, daily at 06:00                  |
+| Reverse proxy | nginx, `/api/` to uvicorn, everything else from disk       |
+
+Code and data live in separate places so I can delete and re-clone the repo without going near the database.
+
+uvicorn listens on loopback only. The internet reaches it through nginx or not at all.
+
+Shipping a change is one command:
+
+```bash
+./deploy/deploy.sh
+```
+
+It refuses to run on a dirty tree (the server pulls from git, so uncommitted work would silently stay behind), runs both check suites, builds and uploads the frontend, pulls and migrates on the server, restarts the API, and finishes with a smoke test against both the site and the API.
+
+### Scheduling
+
+On the server a systemd timer fires the collector every morning. `Persistent=true` matters more than it looks: if the box is down at 06:00, the job runs once it comes back instead of skipping the day. Forecasts can't be re-fetched, so a skipped day is gone.
+
+Running the collector on a laptop instead works too, and there's a `launchd` agent in [`deploy/launchd/`](deploy/launchd/weather-accuracy.collector.plist.example) for that. Same reasoning as `Persistent=true`: `launchd` runs jobs it missed while the machine was asleep, `cron` just skips them.
+
+Either way the collector exits non-zero when a location fails, so the scheduler's status is worth reading. On systemd:
+
+```bash
+systemctl status weather-collector.service
+journalctl -u weather-collector.service -n 50
+```
 
 ## Engineering notes
 
@@ -213,8 +242,8 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/weather-accuracy.collect
 ## Roadmap
 
 - [x] FastAPI endpoint over `forecast_error`, with frontend types generated from the OpenAPI schema
+- [x] Web dashboard showing error against lead time, per location and metric
+- [x] Deploy to a VPS (nginx + systemd timer)
 - [ ] More endpoints: per-location comparison, error over calendar time
-- [ ] Web dashboard showing error against lead time, per location and metric
-- [ ] Deploy to a VPS (nginx + systemd timer)
 - [ ] Tests
 - [ ] Treat precipitation as hit/miss instead of averaging millimetres, since most days are dry and the average looks deceptively good
