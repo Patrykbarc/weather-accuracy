@@ -4,13 +4,13 @@ This app is a package in the pnpm workspace rooted at the repo root (`pnpm-works
 
 Commands work from the repo root:
 
-| Command           | Runs                                     |
-| ----------------- | ---------------------------------------- |
-| `pnpm web:dev`    | dev server at `localhost:4321`           |
-| `pnpm web:build`  | production build to `apps/web/dist/`     |
-| `pnpm web:check`  | `eslint .` + `astro check`               |
-| `pnpm dev`        | web **and** the FastAPI backend together |
-| `pnpm api:dev`    | backend only, at `localhost:8000`        |
+| Command          | Runs                                     |
+| ---------------- | ---------------------------------------- |
+| `pnpm web:dev`   | dev server at `localhost:4321`           |
+| `pnpm web:build` | production build to `apps/web/dist/`     |
+| `pnpm web:check` | `eslint .` + `astro check`               |
+| `pnpm dev`       | web **and** the FastAPI backend together |
+| `pnpm api:dev`   | backend only, at `localhost:8000`        |
 
 Anything without a root alias goes through the filter, e.g. `pnpm --filter web codegen:openapi`. That one needs `pnpm api:dev` running, because it reads `localhost:8000/openapi.json`.
 
