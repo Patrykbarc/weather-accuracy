@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: "Lint, Type-check, Test & Build"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Web lint and type-check
+        run: pnpm web:check
+
+      - name: API lint, type-check and tests
+        run: uv run poe check
+        working-directory: apps/api
+
+      - name: Build the frontend
+        run: pnpm web:build

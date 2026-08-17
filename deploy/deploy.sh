@@ -25,8 +25,12 @@ if [ -n "$(git status --porcelain)" ]; then
     exit 1
 fi
 
-step "Pushing to origin"
-git push
+if [ "${DEPLOY_SKIP_PUSH:-}" = "1" ]; then
+    step "Skipping push (DEPLOY_SKIP_PUSH=1)"
+else
+    step "Pushing to origin"
+    git push
+fi
 
 step "Running checks"
 pnpm web:check
@@ -60,3 +64,4 @@ ssh "$HOST" '
 '
 
 step "Done"
+
