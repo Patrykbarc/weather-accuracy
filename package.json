@@ -10,10 +10,27 @@
     "web:dev": "pnpm --filter web dev",
     "web:build": "pnpm --filter web build",
     "web:check": "pnpm --filter web check",
-    "dev": "pnpm run \"/^(api|web):dev$/\""
+    "dev": "pnpm run \"/^(api|web):dev$/\"",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{ts,tsx,js,jsx,astro}": [
+      "pnpm --filter web exec eslint --fix"
+    ],
+    "apps/web/**/*.{css,json,md}": [
+      "pnpm --filter web exec prettier --write"
+    ],
+    "apps/api/**/*.py": [
+      "uv run --directory apps/api ruff check --fix --force-exclude",
+      "uv run --directory apps/api ruff format --force-exclude"
+    ]
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.29.1"
+  "packageManager": "pnpm@10.29.1",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0"
+  }
 }
