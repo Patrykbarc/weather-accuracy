@@ -61,6 +61,12 @@ jobs:
           EOF
           chmod 600 ~/.ssh/config
 
+      - name: Verify ssh access
+        run: |
+          echo "Key the runner will offer:"
+          ssh-keygen -lf ~/.ssh/deploy_key
+          ssh -o BatchMode=yes mikrus 'echo "logged in as $(id -un)"'
+
       - name: Deploy
         env:
           DEPLOY_HOST: mikrus
