@@ -23,7 +23,7 @@ def test_migrations_created_the_view(session: Session) -> None:
 
 def test_location_fixture_is_saved(location: Location) -> None:
     assert location.id is not None
-    assert location.slug == "testowo"
+    assert location.slug == "test"
 
 
 def test_view_computes_lead_time_and_error(
