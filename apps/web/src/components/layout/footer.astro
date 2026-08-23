@@ -1,8 +1,13 @@
+---
+import { Separator } from "../ui/separator";
+import { Link } from "../ui/link";
+---
+
 <footer class="text-muted-foreground space-y-3 text-sm leading-relaxed">
   <h2 class="text-foreground text-sm font-semibold tracking-wide uppercase">
     Methodology
   </h2>
-  <div class="text-pretty">
+  <p class="text-pretty">
     Every day the tracker saves a fresh 16-day forecast for each location. When
     a day finally arrives, what actually happened gets compared against every
     old forecast that tried to call it. Comparisons are grouped by <strong
@@ -10,20 +15,40 @@
     >, meaning how many days passed between the forecast going out and the day
     it described. Lead time 0 is a same-day forecast. Lead time 15 was made a
     little over two weeks ahead.
-  </div>
-  <div class="text-pretty">
+  </p>
+  <p class="text-pretty">
     <strong>Bias</strong> is the average signed error, so forecast minus measurement.
     Positive bias means the forecast runs high, negative means it runs low. That is
     the number to look at if you want to know whether the model leans one way out
     of habit. <strong>MAE</strong> (mean absolute error) ignores direction and just
     says how far off a typical forecast is.
-  </div>
-  <div class="text-pretty">
+  </p>
+  <p class="text-pretty">
     One thing to watch when reading the chart. The far right rests on very few
     comparisons right now, simply because the tracker has not been running long
     enough to have many 15-day-old forecasts on file yet. That evens out with
     time: once it has been collecting for longer than the forecast horizon,
     every lead time picks up one comparison per day per location. Until then,
     treat the long-range end as a hint rather than a result.
+  </p>
+
+  <Separator />
+
+  <div class="flex flex-wrap justify-between">
+    <p class="text-muted-foreground text-pretty">
+      Developed by: <Link
+        href="https://patrykbarc.com/"
+        target="_blank"
+        rel="noreferrer noopener">Patryk Barć</Link
+      >
+    </p>
+
+    <p class="text-muted-foreground text-pretty">
+      <Link
+        href="https://github.com/Patrykbarc/weather-accuracy"
+        target="_blank"
+        rel="noreferrer noopener">Source code</Link
+      >
+    </p>
   </div>
 </footer>

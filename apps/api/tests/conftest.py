@@ -1,85 +1,123 @@
+"""Test fixtures.
+
+DATABASE_URL is set before anything from `api` is imported at runtime, because
+`api.db.engine` builds its engine at import time from the settings. Runtime
+imports of application code therefore happen inside fixtures. The TYPE_CHECKING
+imports below never execute, so they are safe at module level.
+"""
+
 import os
-import shutil
 import tempfile
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-_TMP_DIR = tempfile.mkdtemp(prefix="weather-accuracy-tests-")
-os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DIR}/test.db"
-
-from datetime import date  # noqa: E402
-from typing import TYPE_CHECKING  # noqa: E402
-
-import pytest  # noqa: E402
-from alembic import command  # noqa: E402
-from alembic.config import Config  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-from sqlmodel import Session  # noqa: E402
-
-from api.db import engine  # noqa: E402
-from api.schemas.schemas import Forecast, Location, Observation  # noqa: E402
-from api.web.main import app  # noqa: E402
+import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-API_ROOT = Path(__file__).resolve().parents[1]
+    from fastapi.testclient import TestClient
+    from sqlmodel import Session
+
+    from api.schemas.schemas import Location
+
+_TMP_DIR = tempfile.TemporaryDirectory()
+_DB_PATH = os.path.join(_TMP_DIR.name, "test.db")
+
+os.environ["DATABASE_URL"] = f"sqlite:///{_DB_PATH}"
+os.environ["DB_ECHO"] = "false"
 
 
 @pytest.fixture(scope="session", autouse=True)
-def migrated_db() -> Iterator[None]:
-    """Build the schema the same way production does, view included."""
-    config = Config(API_ROOT / "alembic.ini")
-    config.set_main_option("script_location", str(API_ROOT / "migrations"))
-    command.upgrade(config, "head")
+def _migrated_database() -> Iterator[None]:
+    """Build the schema the way production does, with Alembic.
+
+    SQLModel.metadata.create_all() would be faster but would not create the
+    forecast_error view, which only exists as a migration.
+    """
+    from pathlib import Path
+
+    from alembic import command
+    from alembic.config import Config
+
+    command.upgrade(Config(str(Path(__file__).parent.parent / "alembic.ini")), "head")
 
     yield
 
-    engine.dispose()
-    shutil.rmtree(_TMP_DIR, ignore_errors=True)
-
-
-@pytest.fixture
-def client() -> Iterator[TestClient]:
-    with TestClient(app) as test_client:
-        yield test_client
+    _TMP_DIR.cleanup()
 
 
 @pytest.fixture
 def session() -> Iterator[Session]:
-    with Session(engine) as db_session:
-        yield db_session
+    """A session whose writes are wiped afterwards, so test order never matters."""
+    from sqlmodel import Session, SQLModel
+
+    from api.db.engine import engine
+
+    with Session(engine) as s:
+        yield s
+
+    with Session(engine) as cleanup:
+        for table in reversed(SQLModel.metadata.sorted_tables):
+            cleanup.execute(table.delete())
+        cleanup.commit()
 
 
 @pytest.fixture
-def forecast_pair(session: Session) -> None:
-    """One location with a forecast two days out and what actually happened.
+def client() -> Iterator[TestClient]:
+    """FastAPI test client, wired to the same temporary database."""
+    from fastapi.testclient import TestClient
 
-    Forecast said 20.0, reality was 18.5, so the error is +1.5 at lead time 2.
-    """
-    location = Location(name="Rzeszów", slug="rzeszow", latitude=50.04, longitude=21.99)
-    session.add(location)
+    from api.web.main import app
+
+    with TestClient(app) as c:
+        yield c
+
+
+@pytest.fixture
+def location(session: Session) -> Location:
+    """One saved location, for tests that need something to hang rows off."""
+    from api.schemas.schemas import Location
+
+    loc = Location(name="Test", slug="test", latitude=50.0, longitude=21.0)
+    session.add(loc)
     session.commit()
-    session.refresh(location)
+    session.refresh(loc)
+    return loc
+
+
+@pytest.fixture
+def forecast_pair(session: Session, location: Location) -> None:
+    """One forecast that met its measurement.
+
+    Issued two days before the day it describes and 1.5 degrees too warm, so the
+    view yields lead_time 2 with a temp_max_error of 1.5. Committed rather than
+    left pending, because the API reads through a session of its own.
+    """
+    from datetime import date
+
+    from api.schemas.schemas import Forecast, Observation
+
+    target = date(2026, 8, 20)
 
     session.add(
         Forecast(
             location_id=location.id,
-            target_date=date(2026, 8, 3),
-            fetched_at=date(2026, 8, 1),
-            temp_max=20.0,
-            temp_min=10.0,
-            precipitation=0.0,
-            wind_gusts=15.0,
+            target_date=target,
+            fetched_at=date(2026, 8, 18),
+            temp_max=25.0,
+            temp_min=None,
+            precipitation=None,
+            wind_gusts=None,
         )
     )
     session.add(
         Observation(
             location_id=location.id,
-            measured_at=date(2026, 8, 3),
-            temp_max=18.5,
-            temp_min=9.0,
-            precipitation=0.0,
-            wind_gusts=12.0,
+            measured_at=target,
+            temp_max=23.5,
+            temp_min=None,
+            precipitation=None,
+            wind_gusts=None,
         )
     )
     session.commit()
