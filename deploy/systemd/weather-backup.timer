@@ -1,0 +1,10 @@
+[Unit]
+Description=Snapshot the Weather Accuracy database daily
+
+[Timer]
+# Half an hour after the collector, so the snapshot includes the morning run.
+OnCalendar=*-*-* 06:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
