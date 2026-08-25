@@ -1,0 +1,12 @@
+[Unit]
+Description=Snapshot the Weather Accuracy database
+
+[Service]
+Type=oneshot
+ExecStart=/opt/weather-accuracy/deploy/backup.sh
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/backups/weather-accuracy
