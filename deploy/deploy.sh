@@ -25,6 +25,29 @@ if [ -n "$(git status --porcelain)" ]; then
     exit 1
 fi
 
+# Same check on the server, before anything is built or uploaded. An untracked
+# file where a tracked one is about to land makes git refuse to pull, and
+# finding that out halfway through leaves the frontend new and the backend old.
+step "Checking the server working tree is clean"
+if ! ssh "$HOST" "sudo -u weather git -C $APP_DIR diff --quiet && sudo -u weather git -C $APP_DIR diff --cached --quiet"; then
+    echo "The checkout on $HOST has local modifications:"
+    ssh "$HOST" "sudo -u weather git -C $APP_DIR status --short"
+    echo
+    echo "Reset them there, then deploy again:"
+    echo "  ssh $HOST 'sudo -u weather git -C $APP_DIR checkout -- .'"
+    exit 1
+fi
+
+untracked=$(ssh "$HOST" "sudo -u weather git -C $APP_DIR ls-files --others --exclude-standard")
+if [ -n "$untracked" ]; then
+    echo "Untracked files in the checkout on $HOST:"
+    echo "$untracked" | sed 's/^/  /'
+    echo
+    echo "If one of them is also in this commit, the pull will abort. Remove them:"
+    echo "  ssh $HOST 'cd $APP_DIR && rm <file>'"
+    exit 1
+fi
+
 if [ "${DEPLOY_SKIP_PUSH:-}" = "1" ]; then
     step "Skipping push (DEPLOY_SKIP_PUSH=1)"
 else
