@@ -12,6 +12,8 @@ The useful part is that each forecast is stored together with the date it was is
 - Does the model lean towards predicting warmer weather than we get?
 - Is Zakopane really harder to forecast than Rzeszów?
 
+After two weeks of collecting, [there are answers](#what-the-data-says-so-far).
+
 I picked the four locations to be as different from each other as I could:
 
 | Location | Terrain     | Why                                                              |
@@ -31,8 +33,77 @@ I picked the four locations to be as different from each other as I could:
 | REST API (`GET /api/analytics`)            | ☑               |
 | Web dashboard                              | ☑               |
 | Deployment (VPS)                           | ☑ live          |
+| Test suite                                 | ☑ 28 tests      |
 
-Collection started on `11-08-2026`. Pairs of forecast and outcome can only be built going forward, so it takes about two weeks before the averages mean anything.
+Collection started on `11-08-2026`. Pairs of forecast and outcome can only be built going forward, so the long-range end of the chart fills in slowly.
+
+## What the data says so far
+
+15 days of collection, 375 forecast/outcome pairs across the four locations. Lead
+times up to 9 rest on at least 17 comparisons each; anything past that is still
+too thin to read. Everything below is max temperature unless stated otherwise.
+
+### A three-day forecast is nearly as good as today's
+
+| days ahead | comparisons | mean absolute error |
+| ---------- | ----------- | ------------------- |
+| 0          | 52          | 0.80 °C             |
+| 1          | 48          | 0.96 °C             |
+| 2          | 44          | 0.87 °C             |
+| 3          | 41          | 1.10 °C             |
+| 5          | 33          | 2.39 °C             |
+| 7          | 25          | 2.88 °C             |
+| 9          | 17          | 3.82 °C             |
+
+Error barely moves for the first three days, then climbs steadily. A week out the
+forecast is about three and a half times worse than a same-day one, which answers
+the question I opened with: closer to four times, not two and not ten.
+
+### Nights are forecast too warm, and shortening the horizon does not help
+
+Minimum temperature runs high at every lead time, including zero:
+
+| days ahead | bias     |
+| ---------- | -------- |
+| 0          | +1.19 °C |
+| 1          | +1.25 °C |
+| 2          | +1.06 °C |
+| 7          | +1.87 °C |
+
+76% of all minimum temperature errors (287 of 375) are positive. A bias that
+survives at lead time 0 is not the forecast struggling to see ahead, it is a
+constant offset.
+
+Worth a caveat: the archive API I compare against is a reanalysis, not a
+thermometer. Part of this gap may be the difference between two models rather
+than a forecast error. I have not separated the two.
+
+### Terrain matters less than I assumed
+
+I picked the four locations expecting mountains to be hardest. Over lead times 0
+to 3 they are indistinguishable:
+
+| location | comparisons | mean absolute error |
+| -------- | ----------- | ------------------- |
+| Rzeszów  | 50          | 0.84 °C             |
+| Zakopane | 43          | 0.93 °C             |
+| Suwałki  | 46          | 0.93 °C             |
+| Sopot    | 46          | 0.99 °C             |
+
+A spread of 0.15 °C on samples of this size is noise. Zakopane is not measurably
+harder than anywhere else here. That may change with more data, or with a metric
+other than max temperature, but for now the hypothesis I started with does not
+hold.
+
+### Two things the current metrics handle badly
+
+Wind gusts miss by 6.6 km/h on average even at short lead times, with no
+consistent direction. Averaging that number hides more than it shows.
+
+Precipitation is worse. 70 of 375 comparisons are exactly zero error, mostly
+because the forecast correctly called a dry day. Averaging millimetres across wet
+and dry days produces a number that looks good for the wrong reason. Hit or miss
+would say more, and that is on the roadmap.
 
 ## How it works
 
@@ -203,6 +274,7 @@ visitor -> Cloudflare (TLS) -> VPS -> nginx -> uvicorn -> SQLite
 | API           | `weather-api.service`, uvicorn bound to `127.0.0.1:8000`   |
 | Collector     | `weather-collector.timer`, daily at 06:00                  |
 | Reverse proxy | nginx, `/api/` to uvicorn, everything else from disk       |
+| Backups       | `/var/backups/weather-accuracy`, 14 daily snapshots        |
 
 Code and data live in separate places so I can delete and re-clone the repo without going near the database.
 
@@ -215,6 +287,25 @@ Shipping a change is one command:
 ```
 
 It refuses to run on a dirty tree (the server pulls from git, so uncommitted work would silently stay behind), runs both check suites, builds and uploads the frontend, pulls and migrates on the server, restarts the API, and finishes with a smoke test against both the site and the API.
+
+### Keeping it alive
+
+The forecasts in that database cannot be fetched again, so two things guard them.
+
+A timer snapshots the database every morning half an hour after the collector
+runs, gzips it, and keeps the last fourteen. It goes through sqlite's own backup
+API rather than `cp`, because copying a file that is being written to can catch
+it mid-write. `deploy/pull-backup.sh` copies the newest snapshot down to my
+laptop, which is the part that survives losing the server itself.
+
+The collector pings [healthchecks.io](https://healthchecks.io) after every
+successful run, from `ExecStartPost` so the ping only fires when the run
+actually worked. That covers the failure mode `OnFailure=` misses: a job that
+never starts raises no error at all, it just quietly stops producing data. If
+the ping stops arriving I get an email the same morning.
+
+The ping URL is a credential, so it lives in `/etc/weather-accuracy.env` rather
+than in git. `deploy/weather-accuracy.env.example` documents what belongs there.
 
 ### Scheduling
 
@@ -237,6 +328,12 @@ journalctl -u weather-collector.service -n 50
 
 **Migrations instead of `create_all()`.** `create_all()` only creates tables that don't exist yet. It won't touch one that's already there, which makes it useless the moment you need to change a column. Since the forecasts I've collected can't be re-fetched, schema changes have to keep the data. Alembic runs in batch mode here because SQLite can't `ALTER` most column properties in place.
 
+**Tests build their schema with Alembic.** `SQLModel.metadata.create_all()` would
+be faster, but the `forecast_error` view only exists as a migration, so half the
+suite would have nothing to query. Running the real migrations means every test
+run also proves the chain still applies to an empty database, which is the check
+I used to do by hand after every model change.
+
 **Partial data still counts.** A forecast day only gets thrown away if every single metric is missing. Aggregates skip `NULL`s anyway, so three good values out of four are worth keeping.
 
 ## Roadmap
@@ -244,6 +341,6 @@ journalctl -u weather-collector.service -n 50
 - [x] FastAPI endpoint over `forecast_error`, with frontend types generated from the OpenAPI schema
 - [x] Web dashboard showing error against lead time, per location and metric
 - [x] Deploy to a VPS (nginx + systemd timer)
+- [x] Tests
 - [ ] More endpoints: per-location comparison, error over calendar time
-- [ ] Tests
-- [ ] Treat precipitation as hit/miss instead of averaging millimetres, since most days are dry and the average looks deceptively good
+- [ ] Split accuracy by season, once there is a year of data
