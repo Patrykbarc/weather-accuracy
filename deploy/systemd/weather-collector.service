@@ -9,7 +9,13 @@ User=weather
 Group=weather
 WorkingDirectory=/opt/weather-accuracy/apps/api
 Environment=HOME=/home/weather
+EnvironmentFile=/etc/weather-accuracy.env
 ExecStart=/opt/weather-accuracy/apps/api/.venv/bin/python -m api.jobs.collector
+
+# Only runs if ExecStart succeeded, so a ping means the data actually landed.
+# Silence is the failure that matters here: if the box is off or the timer is
+# broken nothing fails, it just never runs, and healthchecks notices that.
+ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null ${HEALTHCHECK_URL}
 
 NoNewPrivileges=true
 PrivateTmp=true
