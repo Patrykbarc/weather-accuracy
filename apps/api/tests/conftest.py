@@ -78,7 +78,7 @@ def location(session: Session) -> Location:
     """One saved location, for tests that need something to hang rows off."""
     from api.schemas.schemas import Location
 
-    loc = Location(name="Test", slug="test", latitude=50.0, longitude=21.0)
+    loc = Location(name="Rzeszów", slug="rzeszow", latitude=50.04, longitude=21.99)
     session.add(loc)
     session.commit()
     session.refresh(loc)
